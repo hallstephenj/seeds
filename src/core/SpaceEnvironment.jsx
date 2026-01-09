@@ -111,11 +111,11 @@ export function SpaceDust() {
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
       positions[i * 3 + 2] = r * Math.cos(phi)
 
-      // Subtle blue-purple tint
-      const brightness = 0.1 + Math.random() * 0.15
-      colors[i * 3] = brightness * 0.7
-      colors[i * 3 + 1] = brightness * 0.8
-      colors[i * 3 + 2] = brightness
+      // Subtle cool slate tint (reduced saturation)
+      const brightness = 0.08 + Math.random() * 0.1
+      colors[i * 3] = brightness * 0.85
+      colors[i * 3 + 1] = brightness * 0.88
+      colors[i * 3 + 2] = brightness * 0.92
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -131,7 +131,8 @@ export function SpaceDust() {
                   (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
     const w7 = chapterWeights[7] || 0
 
-    const opacity = Math.min(1, w2to6) * 0.4 + w7 * 0.15
+    // Reduced opacity for premium restrained look
+    const opacity = Math.min(1, w2to6) * 0.25 + w7 * 0.1
     materialRef.current.opacity = Math.max(0, opacity)
   })
 
@@ -144,10 +145,10 @@ export function SpaceDust() {
       <pointsMaterial
         ref={materialRef}
         vertexColors
-        size={8}
+        size={6}
         sizeAttenuation
         transparent
-        opacity={0.4}
+        opacity={0.25}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -183,10 +184,10 @@ export function ParallaxDust() {
     groupRef.current.rotation.y = state.clock.elapsedTime * 0.01
     groupRef.current.rotation.x = state.clock.elapsedTime * 0.005
 
-    // Weighted opacity for chapters 3-6
+    // Weighted opacity for chapters 3-6 (reduced for premium feel)
     const w3to6 = (chapterWeights[3] || 0) + (chapterWeights[4] || 0) +
                   (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
-    const opacity = Math.min(1, w3to6) * 0.2
+    const opacity = Math.min(1, w3to6) * 0.12
     materialRef.current.opacity = Math.max(0, opacity)
   })
 
@@ -199,11 +200,11 @@ export function ParallaxDust() {
       <points geometry={geometry}>
         <pointsMaterial
           ref={materialRef}
-          color="#8899bb"
-          size={2}
+          color="#7a8899"
+          size={1.5}
           sizeAttenuation
           transparent
-          opacity={0.2}
+          opacity={0.12}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
