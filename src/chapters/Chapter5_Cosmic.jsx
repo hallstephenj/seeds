@@ -278,10 +278,10 @@ export function CMBBackground({ weight = 1 }) {
 
 // Main Chapter 5 scene
 export function Chapter5_Cosmic() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(5)
 
-  if (currentChapter < 4 || currentChapter > 6) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>

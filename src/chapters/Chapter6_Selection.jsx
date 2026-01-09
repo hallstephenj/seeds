@@ -181,10 +181,10 @@ function SelectionBackground({ weight = 1 }) {
 
 // Main Chapter 6 scene
 export function Chapter6_Selection() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(6)
 
-  if (currentChapter < 6 || currentChapter > 7) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>

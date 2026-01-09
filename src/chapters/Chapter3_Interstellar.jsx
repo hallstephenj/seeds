@@ -191,10 +191,10 @@ export function NebulaBackdrop({ weight = 1 }) {
 
 // Main Chapter 3 scene
 export function Chapter3_Interstellar() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(3)
 
-  if (currentChapter < 3 || currentChapter > 4) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>

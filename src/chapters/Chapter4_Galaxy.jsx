@@ -245,10 +245,10 @@ export function DustLanes({ weight = 1 }) {
 
 // Main Chapter 4 scene
 export function Chapter4_Galaxy() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(4)
 
-  if (currentChapter < 3 || currentChapter > 5) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>

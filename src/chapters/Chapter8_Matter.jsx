@@ -404,24 +404,24 @@ export function MatterBackground({ count = 800, weight = 1, progress = 0 }) {
 
 // Main Chapter 8 scene
 export function Chapter8_Matter() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
   const weight = useChapterWeight(8)
+  const localProgress = useStore((s) => s.chapterLocalProgress[8] || 0)
 
-  if (currentChapter < 8 || currentChapter > 9) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   // Clear progression:
   // 0-25%: White matter ball (exterior, zooming in)
   // 20-80%: Floating molecules (inside the matter) - extended
   // 75-100%: Atom (zoom into a molecule to find the atom)
-  const showWhiteMatter = chapterProgress < 0.25
-  const showMolecules = chapterProgress >= 0.20 && chapterProgress < 0.80
-  const showAtom = chapterProgress >= 0.75
+  const showWhiteMatter = localProgress < 0.25
+  const showMolecules = localProgress >= 0.20 && localProgress < 0.80
+  const showAtom = localProgress >= 0.75
 
   return (
     <group visible={weight > 0.001}>
-      <MatterBackground count={700} weight={weight} progress={chapterProgress} />
-      <WhiteMatterBall visible={showWhiteMatter} weight={weight} progress={chapterProgress} />
+      <MatterBackground count={700} weight={weight} progress={localProgress} />
+      <WhiteMatterBall visible={showWhiteMatter} weight={weight} progress={localProgress} />
       <FloatingMolecules visible={showMolecules} weight={weight} />
       <AtomicView visible={showAtom} weight={weight} />
 

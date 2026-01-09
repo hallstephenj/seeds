@@ -224,30 +224,37 @@ export function AsteroidBelt({ count = 2000, weight = 1 }) {
 
 // Main Chapter 2 scene
 export function Chapter2_SolarSystem() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
   const weight = useChapterWeight(2)
+  const weight3 = useChapterWeight(3)
+  const weight4 = useChapterWeight(4)
+  const localProgress3 = useStore((s) => s.chapterLocalProgress[3] || 0)
+  const localProgress4 = useStore((s) => s.chapterLocalProgress[4] || 0)
 
-  // Show during chapters 2-4 (Sun fades out in chapter 4)
-  if (currentChapter < 2 || currentChapter > 4) return null
+  // Compute combined visibility - visible when any of chapters 2-4 have weight
+  const combinedWeight = Math.max(weight, weight3, weight4)
+  if (combinedWeight < 0.001) return null
 
-  // Planets fade with chapter 2 weight, but Sun stays visible through chapter 3
-  // and fades out during chapter 4
+  // Planets fade with chapter 2 weight
+  // Sun stays visible through chapter 3 (shrinking) and fades out during chapter 4
   let sunWeight = weight
   let sunScale = 1
-  if (currentChapter === 3) {
-    // Full brightness, gradually shrink from 1 to 0.2 during chapter 3
-    sunWeight = 1
-    sunScale = 1 - chapterProgress * 0.8  // 1 → 0.2
-  } else if (currentChapter === 4) {
-    // Tiny and fading out during first half of chapter 4
-    sunWeight = Math.max(0, 1 - chapterProgress * 2)
-    sunScale = 0.1
+
+  if (weight3 > 0.001) {
+    // During chapter 3: full brightness, gradually shrink from 1 to 0.2
+    sunWeight = Math.max(sunWeight, weight3)
+    const shrinkProgress = localProgress3
+    sunScale = 1 - shrinkProgress * 0.8  // 1 → 0.2
+  }
+
+  if (weight4 > 0.001) {
+    // During chapter 4: tiny and fading out during first half
+    sunScale = 0.2 - localProgress4 * 0.1  // 0.2 → 0.1
+    sunWeight = Math.max(0, 1 - localProgress4 * 2) * weight4
   }
 
   return (
-    <group visible={weight > 0.001 || sunWeight > 0.001}>
-      <group scale={sunScale}>
+    <group visible={combinedWeight > 0.001}>
+      <group scale={Math.max(0.1, sunScale)}>
         <Sun weight={sunWeight} />
       </group>
 

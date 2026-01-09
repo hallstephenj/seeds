@@ -323,28 +323,25 @@ function InformationGrid({ weight = 1 }) {
 
 // Main Chapter 10 component - brief 3D before HTML takes over
 export function Chapter10_SeedPhraseEndCard() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
   const weight = useChapterWeight(10)
+  const localProgress = useStore((s) => s.chapterLocalProgress[10] || 0)
 
-  // Always render (no early return) to avoid hooks issues during transition
-  const isVisible = currentChapter >= 9
-  const isChapter10 = currentChapter === 10
-  const show3D = !isChapter10 || chapterProgress < 0.4
-  const gridWeight = isChapter10 && chapterProgress > 0.1 ? Math.min(1, (chapterProgress - 0.1) / 0.2) : 0
+  // Weight-only gating
+  if (weight < 0.001) return null
+
+  // Use local progress for internal animation timing
+  const show3D = localProgress < 0.4
+  const gridWeight = localProgress > 0.1 ? Math.min(1, (localProgress - 0.1) / 0.2) : 0
 
   return (
-    <group visible={isVisible}>
-      {/* Content always rendered but controlled by visibility/weight */}
-      <group visible={weight > 0.001}>
-        <MorphingAtom progress={isChapter10 ? chapterProgress : 0} weight={show3D ? weight : 0} />
-        <FadeOverlay progress={isChapter10 ? chapterProgress : 0} weight={isChapter10 ? weight : 0} />
-        <InformationGrid weight={isChapter10 ? weight * gridWeight * (1 - chapterProgress) : 0} />
+    <group visible={weight > 0.001}>
+      <MorphingAtom progress={localProgress} weight={show3D ? weight : 0} />
+      <FadeOverlay progress={localProgress} weight={weight} />
+      <InformationGrid weight={weight * gridWeight * (1 - localProgress)} />
 
-        {/* Ambient lighting for the transition */}
-        <ambientLight intensity={0.2 * weight} />
-        <pointLight position={[0, 2, 5]} intensity={0.3 * weight} color="#4a9eff" />
-      </group>
+      {/* Ambient lighting for the transition */}
+      <ambientLight intensity={0.2 * weight} />
+      <pointLight position={[0, 2, 5]} intensity={0.3 * weight} color="#4a9eff" />
     </group>
   )
 }

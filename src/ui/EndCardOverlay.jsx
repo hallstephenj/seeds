@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useStore } from '../core/store'
+import { useStore, TOTAL_DURATION, CHAPTERS } from '../core/store'
 import logoImage from '/logo.png'
 import './EndCardOverlay.css'
 
@@ -22,14 +22,19 @@ const SeedPhraseSheet = ({ side, delay = 0 }) => {
 }
 
 export function EndCardOverlay() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
+  const globalTime = useStore((s) => s.globalTime)
   const [visible, setVisible] = useState(false)
   const [contentVisible, setContentVisible] = useState(false)
 
-  // Show overlay when Chapter 10 reaches ~25% progress
+  // Find chapter 10 start time
+  const chapter10 = CHAPTERS.find(c => c.id === 10)
+  const ch10Start = chapter10?.start || (TOTAL_DURATION - 4)
+
+  // Show overlay when we're ~25% into chapter 10
+  const showTime = ch10Start + (chapter10?.duration || 4) * 0.25
+
   useEffect(() => {
-    if (currentChapter === 10 && chapterProgress > 0.25) {
+    if (globalTime >= showTime) {
       setVisible(true)
       // Stagger content appearance
       setTimeout(() => setContentVisible(true), 300)
@@ -37,7 +42,7 @@ export function EndCardOverlay() {
       setVisible(false)
       setContentVisible(false)
     }
-  }, [currentChapter, chapterProgress])
+  }, [globalTime, showTime])
 
   if (!visible) return null
 

@@ -318,11 +318,10 @@ export function Moon({ weight = 1 }) {
 
 // Main Chapter 1 scene
 export function Chapter1_Liftoff() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(1)
 
-  // Keep mounted during chapters 1-2 but use weight for visibility
-  if (currentChapter < 1 || currentChapter > 2) return null
+  // Weight-only gating - no currentChapter dependency
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>

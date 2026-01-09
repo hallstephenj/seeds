@@ -13,7 +13,7 @@ export const SCALE_CONTEXTS = {
 }
 
 // Chapter definitions (durations in seconds)
-export const CHAPTERS = [
+const CHAPTER_DEFS = [
   { id: 1, name: 'Liftoff', duration: 4, scaleStart: 1, scaleEnd: 1e7 },
   { id: 2, name: 'Solar System', duration: 6, scaleStart: 1e7, scaleEnd: 1e13 },
   { id: 3, name: 'Interstellar', duration: 6, scaleStart: 1e13, scaleEnd: 1e17 },
@@ -26,88 +26,100 @@ export const CHAPTERS = [
   { id: 10, name: 'Seed Phrase End Card', duration: 6, scaleStart: 1e-10, scaleEnd: 1e-10 }
 ]
 
-// Narrative script
+// Compute chapter start times and total duration
+export const TOTAL_DURATION = CHAPTER_DEFS.reduce((sum, ch) => sum + ch.duration, 0) // 64s
+
+// Add start/end times to each chapter
+let cumulative = 0
+export const CHAPTERS = CHAPTER_DEFS.map(ch => {
+  const start = cumulative
+  cumulative += ch.duration
+  return { ...ch, start, end: cumulative }
+})
+
+// Narrative script - absolute times (computed from chapter starts)
+// Ch1@0, Ch2@4, Ch3@10, Ch4@16, Ch5@22, Ch6@29.5, Ch7@34.5, Ch8@42, Ch9@50, Ch10@58
+export const NARRATIVE_CUES = [
+  { time: 0, text: "You lift off from Earth..." },
+  { time: 4, text: "Past the Moon and planets..." },
+  { time: 10, text: "Until the Sun is a pinprick." },
+  { time: 16, text: "The Milky Way shrinks to a smear..." },
+  { time: 22, text: "Then fades into the cosmic web." },
+  { time: 29.5, text: "Now, at random:" },
+  { time: 31.5, text: "You choose one planet." },
+  { time: 34.5, text: "Slowly, it pulls you..." },
+  { time: 42, text: "...into its world of lifeless mass." },
+  { time: 45, text: "Through molecules..." },
+  { time: 50, text: "Until that single atom fills the frame." },
+  { time: 55, text: "This is why bitcoin's security works." },
+  { time: 58, text: "Because that atom is impossible to find." },
+  { time: 62, text: "Unguessable. Yours alone." }
+]
+
+// Legacy format for compatibility (if needed)
 export const NARRATIVE = {
-  1: [
-    { time: 0, text: "You lift off from Earth..." }
-  ],
-  2: [
-    { time: 0, text: "Past the Moon and planets..." }
-  ],
-  3: [
-    { time: 0, text: "Until the Sun is a pinprick." }
-  ],
-  4: [
-    { time: 0, text: "The Milky Way shrinks to a smear..." }
-  ],
-  5: [
-    { time: 0, text: "Then fades into the cosmic web." }
-  ],
-  6: [
-    { time: 0, text: "Now, at random:" },
-    { time: 2, text: "You choose one atom." }
-  ],
-  7: [
-    { time: 0, text: "You pick a random planet..." }
-  ],
-  8: [
-    { time: 0, text: "... falling into its world of stone." },
-    { time: 3, text: "Through molecules..." }
-  ],
-  9: [
-    { time: 0, text: "Until that single atom fills the frame." },
-    { time: 3, text: "This is why your bitcoin is secure." }
-  ],
-  10: [
-    { time: 0, text: "Because this atom is impossible to find." },
-    { time: 3, text: "Unguessable. Yours alone." }
-  ]
+  1: [{ time: 0, text: "You lift off from Earth..." }],
+  2: [{ time: 0, text: "Past the Moon and planets..." }],
+  3: [{ time: 0, text: "Until the Sun is a pinprick." }],
+  4: [{ time: 0, text: "The Milky Way shrinks to a smear..." }],
+  5: [{ time: 0, text: "Then fades into the cosmic web." }],
+  6: [{ time: 0, text: "Now, at random:" }, { time: 2, text: "You choose one planet." }],
+  7: [{ time: 0, text: "Slowly, it pulls you..." }],
+  8: [{ time: 0, text: "...into its world of lifeless mass." }, { time: 3, text: "Through molecules..." }],
+  9: [{ time: 0, text: "Until that single atom fills the frame." }, { time: 5, text: "This is why bitcoin's security works." }],
+  10: [{ time: 0, text: "Because that atom is impossible to find." }, { time: 4, text: "Unguessable. Yours alone." }]
 }
 
-// Main application store
+// Main application store - global timeline driven
 export const useStore = create((set, get) => ({
-  // Journey state
-  currentChapter: 1,
-  chapterProgress: 0,
-  totalProgress: 0,
+  // Global timeline state (single source of truth)
+  globalTime: 0, // seconds (0..TOTAL_DURATION)
   isPlaying: true,
-  isTransitioning: false,
+
+  // Derived values (updated by TransitionController each frame)
+  totalProgress: 0, // 0..1
+  chapterWeights: {}, // { [chapterId]: weight }
+  chapterLocalProgress: {}, // { [chapterId]: localProgress }
 
   // Scale state
   currentScale: 1, // meters
   scaleContext: 'HUMAN',
 
-  // Camera state
-  cameraPosition: [0, 2, 10],
-  cameraTarget: [0, 0, 0],
-
   // UI state
-  showHUD: true,
   narrativeText: '',
-  distanceTraveled: 0,
-
-  // Selection state (for chapter 6)
-  selectedAtomPosition: null,
 
   // Actions
-  setChapter: (chapter) => set({ currentChapter: chapter, chapterProgress: 0 }),
-
-  setChapterProgress: (progress) => {
-    const { currentChapter } = get()
-    set({ chapterProgress: progress })
-
-    // Calculate total progress
-    const chaptersBefore = CHAPTERS.slice(0, currentChapter - 1)
-    const totalDurationBefore = chaptersBefore.reduce((sum, ch) => sum + ch.duration, 0)
-    const currentDuration = CHAPTERS[currentChapter - 1].duration
-    const totalDuration = CHAPTERS.reduce((sum, ch) => sum + ch.duration, 0)
-
-    const totalProgress = (totalDurationBefore + progress * currentDuration) / totalDuration
-    set({ totalProgress })
+  setGlobalTime: (time) => {
+    const clamped = Math.max(0, Math.min(time, TOTAL_DURATION))
+    set({
+      globalTime: clamped,
+      totalProgress: clamped / TOTAL_DURATION
+    })
   },
 
+  setTotalProgress: (progress) => {
+    const clamped = Math.max(0, Math.min(progress, 1))
+    set({
+      totalProgress: clamped,
+      globalTime: clamped * TOTAL_DURATION
+    })
+  },
+
+  advanceTime: (delta) => {
+    const { globalTime, isPlaying } = get()
+    if (!isPlaying) return
+    const newTime = Math.min(globalTime + delta, TOTAL_DURATION)
+    set({
+      globalTime: newTime,
+      totalProgress: newTime / TOTAL_DURATION
+    })
+  },
+
+  setChapterWeights: (weights) => set({ chapterWeights: weights }),
+
+  setChapterLocalProgress: (progress) => set({ chapterLocalProgress: progress }),
+
   setScale: (scale) => {
-    // Determine appropriate scale context
     let context = 'HUMAN'
     for (const [name, ctx] of Object.entries(SCALE_CONTEXTS)) {
       if (scale >= ctx.range[0] && scale <= ctx.range[1]) {
@@ -120,52 +132,48 @@ export const useStore = create((set, get) => ({
 
   setNarrativeText: (text) => set({ narrativeText: text }),
 
-  setDistanceTraveled: (distance) => set({ distanceTraveled: distance }),
-
-  setCameraState: (position, target) => set({
-    cameraPosition: position,
-    cameraTarget: target
-  }),
-
   setIsPlaying: (playing) => set({ isPlaying: playing }),
 
-  setIsTransitioning: (transitioning) => set({ isTransitioning: transitioning }),
-
-  nextChapter: () => {
-    const { currentChapter } = get()
-    if (currentChapter < CHAPTERS.length) {
+  // Skip to a specific chapter start time
+  skipToChapter: (chapterId) => {
+    const chapter = CHAPTERS.find(c => c.id === chapterId)
+    if (chapter) {
       set({
-        isTransitioning: true,
-        currentChapter: currentChapter + 1,
-        chapterProgress: 0
-      })
-      setTimeout(() => set({ isTransitioning: false }), 1000)
-    }
-  },
-
-  skipToEnd: () => set({ currentChapter: 10, chapterProgress: 0 }),
-
-  skipChapter: () => {
-    const { currentChapter } = get()
-    if (currentChapter < CHAPTERS.length) {
-      set({
-        currentChapter: currentChapter + 1,
-        chapterProgress: 0
+        globalTime: chapter.start,
+        totalProgress: chapter.start / TOTAL_DURATION
       })
     }
   },
+
+  skipToEnd: () => set({
+    globalTime: CHAPTERS[9].start,
+    totalProgress: CHAPTERS[9].start / TOTAL_DURATION
+  }),
 
   reset: () => set({
-    currentChapter: 1,
-    chapterProgress: 0,
+    globalTime: 0,
     totalProgress: 0,
     isPlaying: true,
     currentScale: 1,
     scaleContext: 'HUMAN',
     narrativeText: '',
-    distanceTraveled: 0
+    chapterWeights: {},
+    chapterLocalProgress: {}
   })
 }))
+
+// Helper to get current chapter (for UI/debug - derived from weights)
+export function getCurrentChapter(weights) {
+  let maxWeight = 0
+  let maxChapter = 1
+  for (const [id, weight] of Object.entries(weights)) {
+    if (weight > maxWeight) {
+      maxWeight = weight
+      maxChapter = parseInt(id)
+    }
+  }
+  return maxChapter
+}
 
 // Helper to format distance with appropriate units
 export function formatDistance(meters) {

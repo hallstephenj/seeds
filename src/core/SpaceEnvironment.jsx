@@ -1,12 +1,12 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useStore } from './store'
+import { useStore, CHAPTERS, TOTAL_DURATION } from './store'
 
 // Unified starfield that persists across chapters with varying density/intensity
 export function UnifiedStarfield() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
+  const globalTime = useStore((s) => s.globalTime)
+  const chapterWeights = useStore((s) => s.chapterWeights)
   const materialRef = useRef()
 
   const geometry = useMemo(() => {
@@ -56,25 +56,24 @@ export function UnifiedStarfield() {
     return geo
   }, [])
 
-  // Fade based on chapter
+  // Compute opacity based on weighted chapter contributions
   useFrame(() => {
     if (!materialRef.current) return
 
-    let opacity = 0
-    if (currentChapter >= 1 && currentChapter <= 6) {
-      opacity = 0.9
-      // Gentle fade-in at very start of chapter 1, but only after initial frame
-      if (currentChapter === 1 && chapterProgress < 0.2 && chapterProgress > 0) {
-        opacity = Math.min(0.9, (chapterProgress / 0.2) * 0.9 + 0.3)
-      }
-    } else if (currentChapter === 7) {
-      // Fade out during descent
-      opacity = 0.9 * (1 - chapterProgress * 0.8)
-    } else if (currentChapter >= 8) {
-      opacity = 0.1 * (1 - chapterProgress)
-    }
+    // Chapters 1-6: full starfield, Chapter 7: fade out, Chapters 8+: very dim
+    const w1to6 = (chapterWeights[1] || 0) + (chapterWeights[2] || 0) + (chapterWeights[3] || 0) +
+                  (chapterWeights[4] || 0) + (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
+    const w7 = chapterWeights[7] || 0
+    const w8plus = (chapterWeights[8] || 0) + (chapterWeights[9] || 0) + (chapterWeights[10] || 0)
 
-    materialRef.current.opacity = Math.max(0, opacity)
+    // Gentle fade in at start
+    const totalProgress = globalTime / TOTAL_DURATION
+    const fadeInMult = totalProgress < 0.02 ? totalProgress / 0.02 : 1
+
+    let opacity = Math.min(1, w1to6) * 0.9 + w7 * 0.3 + w8plus * 0.05
+    opacity *= fadeInMult
+
+    materialRef.current.opacity = Math.max(0, Math.min(0.9, opacity))
   })
 
   return (
@@ -94,8 +93,7 @@ export function UnifiedStarfield() {
 
 // Subtle space dust / nebula fog layer for depth
 export function SpaceDust() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
+  const chapterWeights = useStore((s) => s.chapterWeights)
   const materialRef = useRef()
 
   const geometry = useMemo(() => {
@@ -128,21 +126,21 @@ export function SpaceDust() {
   useFrame(() => {
     if (!materialRef.current) return
 
-    let opacity = 0
-    if (currentChapter >= 2 && currentChapter <= 7) {
-      opacity = 0.4
-      if (currentChapter === 7) {
-        opacity = 0.4 * (1 - chapterProgress * 0.9)
-      }
-    }
+    // Dust visible chapters 2-7, weighted blend
+    const w2to6 = (chapterWeights[2] || 0) + (chapterWeights[3] || 0) + (chapterWeights[4] || 0) +
+                  (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
+    const w7 = chapterWeights[7] || 0
+
+    const opacity = Math.min(1, w2to6) * 0.4 + w7 * 0.15
     materialRef.current.opacity = Math.max(0, opacity)
   })
 
-  // Use visibility instead of unmounting to avoid geometry recreation
-  const visible = currentChapter <= 7
+  // Compute visibility based on any relevant chapter having weight
+  const hasWeight = (chapterWeights[2] || 0) + (chapterWeights[3] || 0) + (chapterWeights[4] || 0) +
+                    (chapterWeights[5] || 0) + (chapterWeights[6] || 0) + (chapterWeights[7] || 0) > 0.001
 
   return (
-    <points geometry={geometry} visible={visible}>
+    <points geometry={geometry} visible={hasWeight}>
       <pointsMaterial
         ref={materialRef}
         vertexColors
@@ -159,7 +157,7 @@ export function SpaceDust() {
 
 // Parallax dust layer for movement depth cue
 export function ParallaxDust() {
-  const currentChapter = useStore((s) => s.currentChapter)
+  const chapterWeights = useStore((s) => s.chapterWeights)
   const groupRef = useRef()
   const materialRef = useRef()
 
@@ -185,19 +183,19 @@ export function ParallaxDust() {
     groupRef.current.rotation.y = state.clock.elapsedTime * 0.01
     groupRef.current.rotation.x = state.clock.elapsedTime * 0.005
 
-    // Visibility based on chapter
-    let opacity = 0
-    if (currentChapter >= 3 && currentChapter <= 6) {
-      opacity = 0.2
-    }
+    // Weighted opacity for chapters 3-6
+    const w3to6 = (chapterWeights[3] || 0) + (chapterWeights[4] || 0) +
+                  (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
+    const opacity = Math.min(1, w3to6) * 0.2
     materialRef.current.opacity = Math.max(0, opacity)
   })
 
-  // Use visibility instead of unmounting
-  const visible = currentChapter >= 3 && currentChapter <= 7
+  // Compute visibility based on any relevant chapter having weight
+  const hasWeight = (chapterWeights[3] || 0) + (chapterWeights[4] || 0) +
+                    (chapterWeights[5] || 0) + (chapterWeights[6] || 0) + (chapterWeights[7] || 0) > 0.001
 
   return (
-    <group ref={groupRef} visible={visible}>
+    <group ref={groupRef} visible={hasWeight}>
       <points geometry={geometry}>
         <pointsMaterial
           ref={materialRef}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { useStore, CHAPTERS, formatScale } from '../core/store'
+import { useState, useEffect, useRef } from 'react'
+import { useStore, TOTAL_DURATION, formatScale } from '../core/store'
 import './HUD.css'
 
 // Smooth value interpolation hook - prevents flickering
@@ -27,70 +27,10 @@ function useSmoothValue(value, smoothingFactor = 0.1) {
   return smoothed
 }
 
-// Animated text transition component
-function AnimatedText({ text, className, delay = 0 }) {
-  const [displayed, setDisplayed] = useState(text)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const timeoutRef = useRef(null)
 
-  useEffect(() => {
-    if (text !== displayed) {
-      setIsTransitioning(true)
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = setTimeout(() => {
-        setDisplayed(text)
-        setIsTransitioning(false)
-      }, 300 + delay)
-    }
-    return () => clearTimeout(timeoutRef.current)
-  }, [text, delay])
-
-  return (
-    <span className={`${className} ${isTransitioning ? 'text-transitioning' : 'text-visible'}`}>
-      {displayed}
-    </span>
-  )
-}
-
-// Chapter title with smooth transitions
-function ChapterTitle({ chapter, chapterNumber, isVisible }) {
-  const [prevChapter, setPrevChapter] = useState(chapter)
-  const [isAnimating, setIsAnimating] = useState(false)
-
-  useEffect(() => {
-    if (chapter !== prevChapter) {
-      setIsAnimating(true)
-      const timer = setTimeout(() => {
-        setPrevChapter(chapter)
-        setIsAnimating(false)
-      }, 400)
-      return () => clearTimeout(timer)
-    }
-  }, [chapter, prevChapter])
-
-  if (!isVisible) return null
-
-  return (
-    <div className={`chapter-title ${isAnimating ? 'chapter-title--animating' : ''}`}>
-      <span className="chapter-number">Chapter {chapterNumber}</span>
-      <span className="chapter-name">{prevChapter?.name}</span>
-    </div>
-  )
-}
-
-// Progress indicator with smooth fill
-function ProgressBar({ totalProgress, currentChapter, isVisible }) {
+// Seamless progress indicator - no chapter markers
+function ProgressBar({ totalProgress, isVisible }) {
   const smoothProgress = useSmoothValue(totalProgress, 0.08)
-
-  // Move useMemo BEFORE any early return to keep hooks order consistent
-  const markers = useMemo(() => {
-    const totalDuration = CHAPTERS.reduce((sum, c) => sum + c.duration, 0)
-    return CHAPTERS.map((ch, i) => ({
-      id: ch.id,
-      name: ch.name,
-      position: CHAPTERS.slice(0, i).reduce((sum, c) => sum + c.duration, 0) / totalDuration
-    }))
-  }, [])
 
   if (!isVisible) return null
 
@@ -102,16 +42,6 @@ function ProgressBar({ totalProgress, currentChapter, isVisible }) {
           style={{ width: `${smoothProgress * 100}%` }}
         />
         <div className="progress-glow" style={{ left: `${smoothProgress * 100}%` }} />
-      </div>
-      <div className="chapter-markers">
-        {markers.map((marker) => (
-          <div
-            key={marker.id}
-            className={`chapter-marker ${currentChapter > marker.id ? 'completed' : ''} ${currentChapter === marker.id ? 'active' : ''}`}
-            style={{ left: `${marker.position * 100}%` }}
-            title={marker.name}
-          />
-        ))}
       </div>
     </div>
   )
@@ -161,8 +91,8 @@ function ScaleDisplay({ scale, isVisible }) {
 }
 
 
-// Playback controls
-function Controls({ isPlaying, isEndCard, onPlayPause, onReset, onSkip }) {
+// Playback controls - simplified without skip
+function Controls({ isPlaying, isEndCard, onPlayPause, onReset }) {
   return (
     <div className={`controls ${isEndCard ? 'controls--minimal' : ''}`}>
       <button
@@ -179,62 +109,28 @@ function Controls({ isPlaying, isEndCard, onPlayPause, onReset, onSkip }) {
       >
         ⏮
       </button>
-      {!isEndCard && (
-        <button
-          className="control-btn skip"
-          onClick={onSkip}
-          aria-label="Skip chapter"
-        >
-          Skip →
-        </button>
-      )}
     </div>
   )
 }
 
 export function HUD() {
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
+  const globalTime = useStore((s) => s.globalTime)
   const totalProgress = useStore((s) => s.totalProgress)
   const narrativeText = useStore((s) => s.narrativeText)
   const currentScale = useStore((s) => s.currentScale)
   const isPlaying = useStore((s) => s.isPlaying)
   const setIsPlaying = useStore((s) => s.setIsPlaying)
-  const skipChapter = useStore((s) => s.skipChapter)
   const reset = useStore((s) => s.reset)
 
-  const chapter = CHAPTERS[currentChapter - 1]
-
-  // Chapter 10 (End Card) uses minimal HUD - hide sci-fi overlays
-  const isEndCard = currentChapter === 10
+  // End card phase starts when we're near the end
+  const isEndCard = globalTime >= TOTAL_DURATION * 0.92
   const showSciFiElements = !isEndCard
 
-  // Fade HUD elements based on chapter transitions
-  const [hudOpacity, setHudOpacity] = useState(1)
-
-  useEffect(() => {
-    // Slightly fade during rapid chapter changes
-    setHudOpacity(0.85)
-    const timer = setTimeout(() => setHudOpacity(1), 300)
-    return () => clearTimeout(timer)
-  }, [currentChapter])
-
   return (
-    <div
-      className={`hud ${isEndCard ? 'hud--minimal' : ''}`}
-      style={{ '--hud-opacity': hudOpacity }}
-    >
-      {/* Chapter title - hidden on end card */}
-      <ChapterTitle
-        chapter={chapter}
-        chapterNumber={currentChapter}
-        isVisible={showSciFiElements}
-      />
-
-      {/* Progress bar - hidden on end card */}
+    <div className={`hud ${isEndCard ? 'hud--minimal' : ''}`}>
+      {/* Seamless progress bar - no chapter markers */}
       <ProgressBar
         totalProgress={totalProgress}
-        currentChapter={currentChapter}
         isVisible={showSciFiElements}
       />
 
@@ -247,14 +143,12 @@ export function HUD() {
       {/* Scale indicator - hidden on end card */}
       <ScaleDisplay scale={currentScale} isVisible={showSciFiElements} />
 
-
       {/* Controls - minimal on end card */}
       <Controls
         isPlaying={isPlaying}
         isEndCard={isEndCard}
         onPlayPause={() => setIsPlaying(!isPlaying)}
         onReset={reset}
-        onSkip={skipChapter}
       />
     </div>
   )

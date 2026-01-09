@@ -102,30 +102,37 @@ const CAMERA_PATHS = {
   },
 }
 
-// Interpolate along path points using Catmull-Rom-like smoothing
-function getPathValue(points, t, key) {
-  const n = points.length - 1
-  const scaledT = t * n
-  const i = Math.min(Math.floor(scaledT), n - 1)
-  const localT = scaledT - i
+// Sample a chapter's camera path at a given local progress
+function samplePath(chapterId, localProgress) {
+  const path = CAMERA_PATHS[chapterId]
+  if (!path) return null
 
-  const eased = easeInOutQuint(localT)
+  const t = easeOutQuart(localProgress)
+  const p0 = path.points[0]
+  const p1 = path.points[1]
 
-  if (Array.isArray(points[i][key])) {
-    return points[i][key].map((v, idx) =>
-      v + (points[i + 1][key][idx] - v) * eased
-    )
+  return {
+    pos: [
+      p0.pos[0] + (p1.pos[0] - p0.pos[0]) * t,
+      p0.pos[1] + (p1.pos[1] - p0.pos[1]) * t,
+      p0.pos[2] + (p1.pos[2] - p0.pos[2]) * t,
+    ],
+    target: [
+      p0.target[0] + (p1.target[0] - p0.target[0]) * t,
+      p0.target[1] + (p1.target[1] - p0.target[1]) * t,
+      p0.target[2] + (p1.target[2] - p0.target[2]) * t,
+    ],
+    fov: p0.fov + (p1.fov - p0.fov) * t,
+    damping: path.damping,
+    microMotion: path.microMotion,
   }
-  return points[i][key] + (points[i + 1][key] - points[i][key]) * eased
 }
 
 export function CinematicCamera() {
   const { camera } = useThree()
-  const currentChapter = useStore((s) => s.currentChapter)
-  const chapterProgress = useStore((s) => s.chapterProgress)
+  const chapterWeights = useStore((s) => s.chapterWeights)
+  const chapterLocalProgress = useStore((s) => s.chapterLocalProgress)
   const isPlaying = useStore((s) => s.isPlaying)
-  const setScale = useStore((s) => s.setScale)
-  const setDistanceTraveled = useStore((s) => s.setDistanceTraveled)
 
   // Smooth state
   const smoothPos = useRef(new THREE.Vector3(0, 5, 80))
@@ -138,24 +145,69 @@ export function CinematicCamera() {
   const targetTarget = useRef(new THREE.Vector3())
 
   useFrame((state, delta) => {
-    const path = CAMERA_PATHS[currentChapter] || CAMERA_PATHS[1]
-    const t = easeOutQuart(chapterProgress)
+    // Sample each chapter's camera path and blend based on weights
+    let blendedPos = [0, 0, 0]
+    let blendedTarget = [0, 0, 0]
+    let blendedFov = 0
+    let blendedDamping = 0
+    let blendedMicroMotion = 0
+    let totalWeight = 0
 
-    // Get interpolated values along path
-    const pos = getPathValue(path.points, t, 'pos')
-    const target = getPathValue(path.points, t, 'target')
-    const fov = getPathValue(path.points, t, 'fov')
+    for (const chapter of CHAPTERS) {
+      const weight = chapterWeights[chapter.id] || 0
+      if (weight < 0.001) continue
 
-    targetPos.current.set(pos[0], pos[1], pos[2])
-    targetTarget.current.set(target[0], target[1], target[2])
+      const localProgress = chapterLocalProgress[chapter.id] || 0
+      const sample = samplePath(chapter.id, localProgress)
+      if (!sample) continue
 
-    // Add subtle micro-motion (procedural noise)
-    if (path.microMotion > 0 && isPlaying) {
+      blendedPos[0] += sample.pos[0] * weight
+      blendedPos[1] += sample.pos[1] * weight
+      blendedPos[2] += sample.pos[2] * weight
+
+      blendedTarget[0] += sample.target[0] * weight
+      blendedTarget[1] += sample.target[1] * weight
+      blendedTarget[2] += sample.target[2] * weight
+
+      blendedFov += sample.fov * weight
+      blendedDamping += sample.damping * weight
+      blendedMicroMotion += sample.microMotion * weight
+
+      totalWeight += weight
+    }
+
+    // Normalize by total weight
+    if (totalWeight > 0) {
+      blendedPos[0] /= totalWeight
+      blendedPos[1] /= totalWeight
+      blendedPos[2] /= totalWeight
+
+      blendedTarget[0] /= totalWeight
+      blendedTarget[1] /= totalWeight
+      blendedTarget[2] /= totalWeight
+
+      blendedFov /= totalWeight
+      blendedDamping /= totalWeight
+      blendedMicroMotion /= totalWeight
+    } else {
+      // Fallback to chapter 1 start if no weights
+      blendedPos = [0, 5, 80]
+      blendedTarget = [0, 0, 0]
+      blendedFov = 60
+      blendedDamping = 3
+      blendedMicroMotion = 0.15
+    }
+
+    targetPos.current.set(blendedPos[0], blendedPos[1], blendedPos[2])
+    targetTarget.current.set(blendedTarget[0], blendedTarget[1], blendedTarget[2])
+
+    // Add subtle micro-motion (procedural noise) to blended target
+    if (blendedMicroMotion > 0 && isPlaying) {
       const time = state.clock.elapsedTime
       const noiseScale = 0.5
-      const noiseX = Math.sin(time * noiseScale + noiseOffset.current.x) * path.microMotion
-      const noiseY = Math.cos(time * noiseScale * 1.3 + noiseOffset.current.y) * path.microMotion * 0.7
-      const noiseZ = Math.sin(time * noiseScale * 0.8 + noiseOffset.current.x * 0.5) * path.microMotion * 0.5
+      const noiseX = Math.sin(time * noiseScale + noiseOffset.current.x) * blendedMicroMotion
+      const noiseY = Math.cos(time * noiseScale * 1.3 + noiseOffset.current.y) * blendedMicroMotion * 0.7
+      const noiseZ = Math.sin(time * noiseScale * 0.8 + noiseOffset.current.x * 0.5) * blendedMicroMotion * 0.5
 
       targetPos.current.x += noiseX
       targetPos.current.y += noiseY
@@ -163,29 +215,18 @@ export function CinematicCamera() {
     }
 
     // Apply damping for smooth, heavy camera feel
-    const dampingFactor = path.damping
+    const dampingFactor = Math.max(1, Math.min(5, blendedDamping)) // Clamp to sane range
     const dt = Math.min(delta, 0.1) // Cap delta to prevent jumps
 
     dampVector3(smoothPos.current, targetPos.current, dampingFactor, dt)
     dampVector3(smoothTarget.current, targetTarget.current, dampingFactor * 1.5, dt)
-    smoothFov.current = damp(smoothFov.current, fov, dampingFactor * 2, dt)
+    smoothFov.current = damp(smoothFov.current, blendedFov, dampingFactor * 2, dt)
 
     // Apply to camera
     camera.position.copy(smoothPos.current)
     camera.lookAt(smoothTarget.current)
     camera.fov = smoothFov.current
     camera.updateProjectionMatrix()
-
-    // Update scale display
-    const chapter = CHAPTERS[currentChapter - 1]
-    if (chapter) {
-      const logStart = Math.log10(chapter.scaleStart)
-      const logEnd = Math.log10(chapter.scaleEnd)
-      const currentLog = logStart + (logEnd - logStart) * t
-      const scale = Math.pow(10, currentLog)
-      setScale(scale)
-      setDistanceTraveled(scale)
-    }
   })
 
   return null

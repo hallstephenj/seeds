@@ -173,10 +173,10 @@ function DescentStars({ weight = 1 }) {
 
 // Main Chapter 7 scene
 export function Chapter7_Descent() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(7)
 
-  if (currentChapter < 7 || currentChapter > 8) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>

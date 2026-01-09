@@ -213,10 +213,10 @@ export function RevealBackground({ weight = 1 }) {
 
 // Main Chapter 9 scene
 export function Chapter9_Reveal() {
-  const currentChapter = useStore((s) => s.currentChapter)
   const weight = useChapterWeight(9)
 
-  if (currentChapter < 9 || currentChapter > 10) return null
+  // Weight-only gating
+  if (weight < 0.001) return null
 
   return (
     <group visible={weight > 0.001}>
