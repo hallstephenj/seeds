@@ -30,8 +30,8 @@ export function EndCardOverlay() {
   const chapter10 = CHAPTERS.find(c => c.id === 10)
   const ch10Start = chapter10?.start || (TOTAL_DURATION - 4)
 
-  // Show overlay when we're ~25% into chapter 10
-  const showTime = ch10Start + (chapter10?.duration || 4) * 0.25
+  // Show overlay when we're ~66% into chapter 10 (let "Because that atom..." linger)
+  const showTime = ch10Start + (chapter10?.duration || 4) * 0.66
 
   useEffect(() => {
     if (globalTime >= showTime) {
