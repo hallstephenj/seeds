@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useStore, TOTAL_DURATION, CHAPTERS } from '../core/store'
 import logoImage from '/logo.png'
 import './EndCardOverlay.css'
 
 // Single paper sheet component
 const SeedPhraseSheet = ({ side, delay = 0 }) => {
-  const words = Array.from({ length: 12 }, (_, i) => i + 1 + (side === 'right' ? 12 : 0))
+  const words = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => i + 1 + (side === 'right' ? 12 : 0)),
+    [side]
+  )
 
   return (
     <div className={`seed-sheet seed-sheet--${side}`} style={{ animationDelay: `${delay}ms` }}>
@@ -21,28 +24,40 @@ const SeedPhraseSheet = ({ side, delay = 0 }) => {
   )
 }
 
+// Compute showTime once at module level (CHAPTERS is static)
+const chapter10 = CHAPTERS.find(c => c.id === 10)
+const SHOW_TIME = (chapter10?.start || (TOTAL_DURATION - 4)) + (chapter10?.duration || 4) * 0.66
+
 export function EndCardOverlay() {
   const globalTime = useStore((s) => s.globalTime)
   const [visible, setVisible] = useState(false)
   const [contentVisible, setContentVisible] = useState(false)
-
-  // Find chapter 10 start time
-  const chapter10 = CHAPTERS.find(c => c.id === 10)
-  const ch10Start = chapter10?.start || (TOTAL_DURATION - 4)
-
-  // Show overlay when we're ~66% into chapter 10 (let "Because that atom..." linger)
-  const showTime = ch10Start + (chapter10?.duration || 4) * 0.66
+  const timeoutRef = useRef(null)
 
   useEffect(() => {
-    if (globalTime >= showTime) {
-      setVisible(true)
-      // Stagger content appearance
-      setTimeout(() => setContentVisible(true), 300)
+    // Clear any pending timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+
+    if (globalTime >= SHOW_TIME) {
+      if (!visible) {
+        setVisible(true)
+        // Stagger content appearance
+        timeoutRef.current = setTimeout(() => setContentVisible(true), 300)
+      }
     } else {
       setVisible(false)
       setContentVisible(false)
     }
-  }, [globalTime, showTime])
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [globalTime, visible])
 
   if (!visible) return null
 
