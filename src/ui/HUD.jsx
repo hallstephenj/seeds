@@ -80,10 +80,13 @@ function NarrativeDisplay({ text, isCentered }) {
 function ScaleDisplay({ scale, isVisible }) {
   if (!isVisible) return null
 
+  // Debug: show raw value too
+  const rawValue = scale ? scale.toExponential(2) : 'null'
+
   return (
     <div className="scale-indicator">
       <span className="scale-label">Scale</span>
-      <span className="scale-value">{formatScale(scale)}</span>
+      <span className="scale-value">{formatScale(scale)} ({rawValue})</span>
     </div>
   )
 }
