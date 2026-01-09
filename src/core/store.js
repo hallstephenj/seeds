@@ -194,11 +194,85 @@ export function formatDistance(meters) {
   }
 }
 
-// Helper to format scale
+// Helper to format scale with meaningful units across all scales
 export function formatScale(meters) {
-  const exp = Math.floor(Math.log10(Math.abs(meters)))
-  if (exp >= 0 && exp <= 3) {
-    return `${meters.toFixed(0)} m`
+  // Guard against invalid values
+  if (!meters || !isFinite(meters) || meters <= 0) {
+    return '—'
   }
-  return `10^${exp} m`
+
+  const abs = Math.abs(meters)
+
+  // Subatomic scales (< 1 nanometer)
+  if (abs < 1e-9) {
+    const picometers = abs * 1e12
+    if (picometers < 1) {
+      const femtometers = abs * 1e15
+      return `${femtometers.toFixed(1)} fm`
+    }
+    return `${picometers.toFixed(1)} pm`
+  }
+
+  // Nanometer scale
+  if (abs < 1e-6) {
+    const nanometers = abs * 1e9
+    return `${nanometers.toFixed(1)} nm`
+  }
+
+  // Micrometer scale
+  if (abs < 1e-3) {
+    const micrometers = abs * 1e6
+    return `${micrometers.toFixed(1)} μm`
+  }
+
+  // Millimeter scale
+  if (abs < 1) {
+    const millimeters = abs * 1e3
+    return `${millimeters.toFixed(1)} mm`
+  }
+
+  // Meter scale
+  if (abs < 1000) {
+    return `${abs.toFixed(1)} m`
+  }
+
+  // Kilometer scale (up to ~1 AU)
+  if (abs < 1.496e11) {
+    const km = abs / 1000
+    if (km < 1e6) {
+      return `${km.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} km`
+    }
+    return `${(km / 1e6).toFixed(1)}M km`
+  }
+
+  // AU scale (up to ~1 light-year)
+  if (abs < 9.461e15) {
+    const au = abs / 1.496e11
+    return `${au.toFixed(2)} AU`
+  }
+
+  // Light-year scale (up to ~1 kiloparsec)
+  if (abs < 3.086e19) {
+    const ly = abs / 9.461e15
+    if (ly < 1000) {
+      return `${ly.toFixed(1)} ly`
+    }
+    return `${(ly / 1000).toFixed(2)}k ly`
+  }
+
+  // Kiloparsec scale (up to ~1 megaparsec)
+  if (abs < 3.086e22) {
+    const kpc = abs / 3.086e19
+    return `${kpc.toFixed(1)} kpc`
+  }
+
+  // Megaparsec scale (up to ~1 gigaparsec)
+  if (abs < 3.086e25) {
+    const mpc = abs / 3.086e22
+    return `${mpc.toFixed(1)} Mpc`
+  }
+
+  // Gigaparsec scale (cosmic web / observable universe)
+  const gpc = abs / 3.086e25
+  return `${gpc.toFixed(2)} Gpc`
 }
