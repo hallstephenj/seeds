@@ -30,25 +30,17 @@ const SHOW_TIME = (chapter10?.start || (TOTAL_DURATION - 4)) + (chapter10?.durat
 
 export function EndCardOverlay() {
   const globalTime = useStore((s) => s.globalTime)
-  const [visible, setVisible] = useState(false)
   const [contentVisible, setContentVisible] = useState(false)
   const timeoutRef = useRef(null)
 
-  useEffect(() => {
-    // Clear any pending timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
-    }
+  // Simple visibility check - no state needed
+  const visible = globalTime >= SHOW_TIME
 
-    if (globalTime >= SHOW_TIME) {
-      if (!visible) {
-        setVisible(true)
-        // Stagger content appearance
-        timeoutRef.current = setTimeout(() => setContentVisible(true), 300)
-      }
-    } else {
-      setVisible(false)
+  useEffect(() => {
+    if (visible && !contentVisible) {
+      // Stagger content appearance
+      timeoutRef.current = setTimeout(() => setContentVisible(true), 300)
+    } else if (!visible && contentVisible) {
       setContentVisible(false)
     }
 
@@ -57,7 +49,7 @@ export function EndCardOverlay() {
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [globalTime, visible])
+  }, [visible, contentVisible])
 
   if (!visible) return null
 
