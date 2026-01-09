@@ -76,37 +76,14 @@ function NarrativeDisplay({ text, isCentered }) {
   )
 }
 
-// Scale indicator with log-space smoothing for exponential changes
+// Scale indicator - direct display without smoothing
 function ScaleDisplay({ scale, isVisible }) {
-  const logScaleRef = useRef(Math.log10(Math.max(scale, 1e-15)))
-  const [displayScale, setDisplayScale] = useState(scale)
-
-  useEffect(() => {
-    let animationFrame
-    const targetLogScale = Math.log10(Math.max(scale, 1e-15))
-
-    const animate = () => {
-      const diff = targetLogScale - logScaleRef.current
-      if (Math.abs(diff) > 0.01) {
-        // Smooth in log space
-        logScaleRef.current += diff * 0.15
-        setDisplayScale(Math.pow(10, logScaleRef.current))
-        animationFrame = requestAnimationFrame(animate)
-      } else {
-        logScaleRef.current = targetLogScale
-        setDisplayScale(scale)
-      }
-    }
-    animationFrame = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrame)
-  }, [scale])
-
   if (!isVisible) return null
 
   return (
     <div className="scale-indicator">
       <span className="scale-label">Scale</span>
-      <span className="scale-value">{formatScale(displayScale)}</span>
+      <span className="scale-value">{formatScale(scale)}</span>
     </div>
   )
 }
