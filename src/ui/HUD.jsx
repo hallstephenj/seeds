@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore, TOTAL_DURATION, formatScale } from '../core/store'
-import { useAudio } from '../core/AudioManager'
 import './HUD.css'
 
 // Smooth value interpolation hook - prevents flickering
@@ -113,8 +112,8 @@ function ScaleDisplay({ scale, isVisible }) {
 }
 
 
-// Playback controls with audio toggle
-function Controls({ isPlaying, isEndCard, isMuted, onPlayPause, onReset, onToggleMute }) {
+// Playback controls
+function Controls({ isPlaying, isEndCard, onPlayPause, onReset }) {
   return (
     <div className={`controls ${isEndCard ? 'controls--minimal' : ''}`}>
       <button
@@ -123,13 +122,6 @@ function Controls({ isPlaying, isEndCard, isMuted, onPlayPause, onReset, onToggl
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
         {isPlaying ? '⏸' : '▶'}
-      </button>
-      <button
-        className="control-btn"
-        onClick={onToggleMute}
-        aria-label={isMuted ? 'Unmute' : 'Mute'}
-      >
-        {isMuted ? '🔇' : '🔊'}
       </button>
       <button
         className="control-btn"
@@ -150,35 +142,6 @@ export function HUD() {
   const isPlaying = useStore((s) => s.isPlaying)
   const setIsPlaying = useStore((s) => s.setIsPlaying)
   const reset = useStore((s) => s.reset)
-
-  const { startAudio, toggleMute, isMuted } = useAudio()
-  const [audioMuted, setAudioMuted] = useState(true) // Start muted until user clicks
-  const hasInteractedRef = useRef(false)
-
-  // Start audio on first user interaction (browser requirement)
-  const handleFirstInteraction = useCallback(() => {
-    if (!hasInteractedRef.current) {
-      hasInteractedRef.current = true
-      startAudio()
-      setAudioMuted(false)
-    }
-  }, [startAudio])
-
-  const handlePlayPause = useCallback(() => {
-    handleFirstInteraction()
-    setIsPlaying(!isPlaying)
-  }, [handleFirstInteraction, setIsPlaying, isPlaying])
-
-  const handleToggleMute = useCallback(() => {
-    handleFirstInteraction()
-    const muted = toggleMute()
-    setAudioMuted(muted)
-  }, [handleFirstInteraction, toggleMute])
-
-  const handleReset = useCallback(() => {
-    handleFirstInteraction()
-    reset()
-  }, [handleFirstInteraction, reset])
 
   // End card phase starts when we're near the end
   const isEndCard = globalTime >= TOTAL_DURATION * 0.92
@@ -205,10 +168,8 @@ export function HUD() {
       <Controls
         isPlaying={isPlaying}
         isEndCard={isEndCard}
-        isMuted={audioMuted}
-        onPlayPause={handlePlayPause}
-        onReset={handleReset}
-        onToggleMute={handleToggleMute}
+        onPlayPause={() => setIsPlaying(!isPlaying)}
+        onReset={reset}
       />
     </div>
   )
