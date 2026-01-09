@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
+  <!-- Unchained wordmark - clean, professional typography -->
+  <g fill="currentColor">
+    <!-- U -->
+    <path d="M8 8v16c0 5.5 3.5 9 9 9s9-3.5 9-9V8h-4v16c0 3.3-2 5-5 5s-5-1.7-5-5V8H8z"/>
+    <!-- N -->
+    <path d="M32 8v25h4V16l10 17h4V8h-4v17L36 8h-4z"/>
+    <!-- C -->
+    <path d="M56 20.5c0-7.5 5-13 12-13 4.5 0 8 2 10 5l-3.5 2.5c-1.5-2-3.5-3.5-6.5-3.5-5 0-8 4-8 9s3 9 8 9c3 0 5.5-1.5 6.5-3.5l3.5 2.5c-2 3-5.5 5-10 5-7 0-12-5.5-12-13z"/>
+    <!-- H -->
+    <path d="M84 8v25h4V22h10v11h4V8h-4v10H88V8h-4z"/>
+    <!-- A -->
+    <path d="M108 33h4.5l2-6h9l2 6h4.5l-9-25h-4l-9 25zm8-10l3-9 3 9h-6z"/>
+    <!-- I -->
+    <path d="M136 8v25h4V8h-4z"/>
+    <!-- N -->
+    <path d="M147 8v25h4V16l10 17h4V8h-4v17l-10-17h-4z"/>
+    <!-- E -->
+    <path d="M171 8v25h14v-4h-10v-7h9v-4h-9v-6h10V8h-14z"/>
+    <!-- D -->
+    <path d="M190 8v25h7c7 0 11-5 11-12.5S204 8 197 8h-7zm4 4h3c4.5 0 7 3 7 8.5s-2.5 8.5-7 8.5h-3V12z"/>
+  </g>
+</svg>
