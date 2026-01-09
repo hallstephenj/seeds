@@ -19,86 +19,87 @@ function dampVector3(current, target, lambda, dt) {
 }
 
 // Chapter camera configurations - single motion per chapter
+// Reduced microMotion and increased damping for heavier, more "rigged" feel
 const CAMERA_PATHS = {
   1: {
     points: [
       { pos: [0, 5, 80], target: [0, 0, 0], fov: 60 },
       { pos: [0, 80, 300], target: [0, 0, 0], fov: 55 },
     ],
-    damping: 3,
-    microMotion: 0.15,
+    damping: 4,           // Increased from 3 - heavier
+    microMotion: 0.05,    // Reduced from 0.15
   },
   2: {
     points: [
       { pos: [0, 80, 300], target: [0, 0, 0], fov: 55 },
       { pos: [0, 160, 500], target: [0, 0, 0], fov: 50 },
     ],
-    damping: 2.5,
-    microMotion: 0.1,
+    damping: 3.5,         // Increased from 2.5
+    microMotion: 0.035,   // Reduced from 0.1
   },
   3: {
     points: [
       { pos: [0, 160, 500], target: [0, 0, 0], fov: 50 },
       { pos: [0, 280, 700], target: [0, 0, 0], fov: 45 },
     ],
-    damping: 2,
-    microMotion: 0.05,
+    damping: 3,           // Increased from 2
+    microMotion: 0.02,    // Reduced from 0.05
   },
   4: {
     points: [
       { pos: [0, 280, 700], target: [0, 0, 0], fov: 45 },
       { pos: [0, 420, 850], target: [0, 0, 0], fov: 50 },
     ],
-    damping: 1.8,
-    microMotion: 0.02,
+    damping: 2.8,         // Increased from 1.8
+    microMotion: 0.01,    // Reduced from 0.02
   },
   5: {
     points: [
       { pos: [0, 420, 850], target: [0, 0, 0], fov: 50 },
       { pos: [0, 530, 1050], target: [0, 0, 0], fov: 55 },
     ],
-    damping: 1.5,
-    microMotion: 0.01,
+    damping: 2.5,         // Increased from 1.5
+    microMotion: 0.005,   // Reduced from 0.01
   },
   6: {
     points: [
       { pos: [0, 530, 1050], target: [0, 0, 0], fov: 55 },
       { pos: [0, 490, 950], target: [0, 0, 0], fov: 45 },
     ],
-    damping: 1.2,
-    microMotion: 0.005,
+    damping: 2.2,         // Increased from 1.2
+    microMotion: 0.003,   // Reduced from 0.005
   },
   7: {
     points: [
       { pos: [0, 490, 950], target: [0, 0, 0], fov: 45 },
       { pos: [0, 30, 60], target: [0, 0, 0], fov: 55 },
     ],
-    damping: 2.5,
-    microMotion: 0.08,
+    damping: 3.5,         // Increased from 2.5
+    microMotion: 0.03,    // Reduced from 0.08
   },
   8: {
     points: [
       { pos: [0, 30, 60], target: [0, 0, 0], fov: 55 },
       { pos: [0, 0.8, 3], target: [0, 0, 0], fov: 45 },
     ],
-    damping: 3,
-    microMotion: 0.2,
+    damping: 4,           // Increased from 3
+    microMotion: 0.06,    // Reduced from 0.2
   },
   9: {
     points: [
       { pos: [0, 0.8, 3], target: [0, 0, 0], fov: 45 },
       { pos: [2, 0.8, 2], target: [0, 0, 0], fov: 40 },
     ],
-    damping: 4,
-    microMotion: 0.02,
+    damping: 5,           // Increased from 4
+    microMotion: 0.008,   // Reduced from 0.02
   },
   10: {
     points: [
       { pos: [2, 0.8, 2], target: [0, 0, 0], fov: 40 },
       { pos: [0.3, 0.4, 1.5], target: [0, 0, 0], fov: 35 },
     ],
-    damping: 5,
-    microMotion: 0,
+    damping: 6,           // Increased from 5
+    microMotion: 0,       // No motion on end card
   },
 }
 

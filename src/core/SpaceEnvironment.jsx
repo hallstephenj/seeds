@@ -26,24 +26,25 @@ export function UnifiedStarfield() {
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
       positions[i * 3 + 2] = r * Math.cos(phi)
 
-      // Color temperature variation (blue-white to warm)
+      // Color temperature variation - desaturated, neutral palette
+      // Reduced color variation for premium, restrained look
       const temp = Math.random()
-      const brightness = 0.5 + Math.random() * 0.5
-      if (temp < 0.3) {
-        // Blue-white stars
-        colors[i * 3] = brightness * 0.9
-        colors[i * 3 + 1] = brightness * 0.95
+      const brightness = 0.55 + Math.random() * 0.45  // Slightly tighter range
+      if (temp < 0.25) {
+        // Cool white stars (very slight blue tint)
+        colors[i * 3] = brightness * 0.96
+        colors[i * 3 + 1] = brightness * 0.98
         colors[i * 3 + 2] = brightness
-      } else if (temp < 0.7) {
-        // White stars
+      } else if (temp < 0.75) {
+        // Neutral white stars (majority)
         colors[i * 3] = brightness
         colors[i * 3 + 1] = brightness
         colors[i * 3 + 2] = brightness
       } else {
-        // Warm stars
+        // Warm white stars (very subtle warmth)
         colors[i * 3] = brightness
-        colors[i * 3 + 1] = brightness * 0.9
-        colors[i * 3 + 2] = brightness * 0.7
+        colors[i * 3 + 1] = brightness * 0.97
+        colors[i * 3 + 2] = brightness * 0.92
       }
 
       // Size variation
@@ -70,10 +71,10 @@ export function UnifiedStarfield() {
     const totalProgress = globalTime / TOTAL_DURATION
     const fadeInMult = totalProgress < 0.02 ? totalProgress / 0.02 : 1
 
-    let opacity = Math.min(1, w1to6) * 0.9 + w7 * 0.3 + w8plus * 0.05
+    let opacity = Math.min(1, w1to6) * 0.75 + w7 * 0.25 + w8plus * 0.04  // Reduced overall
     opacity *= fadeInMult
 
-    materialRef.current.opacity = Math.max(0, Math.min(0.9, opacity))
+    materialRef.current.opacity = Math.max(0, Math.min(0.75, opacity))
   })
 
   return (
@@ -81,10 +82,10 @@ export function UnifiedStarfield() {
       <pointsMaterial
         ref={materialRef}
         vertexColors
-        size={1.2}
+        size={1.0}             // Reduced from 1.2
         sizeAttenuation={false}
         transparent
-        opacity={0.9}
+        opacity={0.75}         // Reduced from 0.9
         depthWrite={false}
       />
     </points>
@@ -111,11 +112,11 @@ export function SpaceDust() {
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
       positions[i * 3 + 2] = r * Math.cos(phi)
 
-      // Subtle cool slate tint (reduced saturation)
-      const brightness = 0.08 + Math.random() * 0.1
-      colors[i * 3] = brightness * 0.85
-      colors[i * 3 + 1] = brightness * 0.88
-      colors[i * 3 + 2] = brightness * 0.92
+      // Neutral slate - no purple/blue tint, very desaturated
+      const brightness = 0.06 + Math.random() * 0.08  // Reduced brightness
+      colors[i * 3] = brightness * 0.95     // Near neutral
+      colors[i * 3 + 1] = brightness * 0.96
+      colors[i * 3 + 2] = brightness * 0.97 // Barely cooler
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -131,8 +132,8 @@ export function SpaceDust() {
                   (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
     const w7 = chapterWeights[7] || 0
 
-    // Reduced opacity for premium restrained look
-    const opacity = Math.min(1, w2to6) * 0.25 + w7 * 0.1
+    // Further reduced opacity for premium restrained look
+    const opacity = Math.min(1, w2to6) * 0.15 + w7 * 0.06  // Reduced from 0.25/0.1
     materialRef.current.opacity = Math.max(0, opacity)
   })
 
@@ -145,10 +146,10 @@ export function SpaceDust() {
       <pointsMaterial
         ref={materialRef}
         vertexColors
-        size={6}
+        size={5}              // Reduced from 6
         sizeAttenuation
         transparent
-        opacity={0.25}
+        opacity={0.15}        // Reduced from 0.25
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -184,10 +185,10 @@ export function ParallaxDust() {
     groupRef.current.rotation.y = state.clock.elapsedTime * 0.01
     groupRef.current.rotation.x = state.clock.elapsedTime * 0.005
 
-    // Weighted opacity for chapters 3-6 (reduced for premium feel)
+    // Weighted opacity for chapters 3-6 (further reduced)
     const w3to6 = (chapterWeights[3] || 0) + (chapterWeights[4] || 0) +
                   (chapterWeights[5] || 0) + (chapterWeights[6] || 0)
-    const opacity = Math.min(1, w3to6) * 0.12
+    const opacity = Math.min(1, w3to6) * 0.07  // Reduced from 0.12
     materialRef.current.opacity = Math.max(0, opacity)
   })
 
@@ -200,11 +201,11 @@ export function ParallaxDust() {
       <points geometry={geometry}>
         <pointsMaterial
           ref={materialRef}
-          color="#7a8899"
-          size={1.5}
+          color="#8a8f96"       // More neutral gray (was #7a8899 - too blue)
+          size={1.2}           // Reduced from 1.5
           sizeAttenuation
           transparent
-          opacity={0.12}
+          opacity={0.07}       // Reduced from 0.12
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
