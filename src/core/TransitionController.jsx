@@ -127,27 +127,28 @@ export function TransitionController() {
     setChapterWeights(weights)
     setChapterLocalProgress(localProgresses)
 
-    // Compute blended scale (in log space for smooth transitions)
-    let blendedLogScale = 0
-    let totalWeight = 0
+    // Compute scale directly from global time (more robust than weight-based blending)
+    // Find which chapter(s) we're in and interpolate scale in log space
+    let scale = 1
 
-    for (const chapter of CHAPTERS) {
-      const weight = weights[chapter.id] || 0
-      if (weight > 0.001) {
-        const localProgress = localProgresses[chapter.id] || 0
+    for (let i = 0; i < CHAPTERS.length; i++) {
+      const chapter = CHAPTERS[i]
+
+      if (currentTime >= chapter.start && currentTime < chapter.end) {
+        // We're inside this chapter - interpolate between scaleStart and scaleEnd
+        const localProgress = (currentTime - chapter.start) / chapter.duration
         const logStart = Math.log10(chapter.scaleStart)
         const logEnd = Math.log10(chapter.scaleEnd)
         const logScale = logStart + (logEnd - logStart) * localProgress
-        blendedLogScale += logScale * weight
-        totalWeight += weight
+        scale = Math.pow(10, logScale)
+        break
+      } else if (currentTime >= chapter.end && i === CHAPTERS.length - 1) {
+        // Past the last chapter - use its end scale
+        scale = chapter.scaleEnd
       }
     }
 
-    if (totalWeight > 0) {
-      blendedLogScale /= totalWeight
-      const scale = Math.pow(10, blendedLogScale)
-      setScale(scale)
-    }
+    setScale(scale)
 
     // Handle narrative cues based on absolute time
     let currentNarrativeIndex = -1
